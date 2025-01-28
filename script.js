@@ -73,12 +73,6 @@ form.addEventListener('submit', function (e) {
 })
 
 inputType.addEventListener('change', function (e) {
-  console.log(e.target.value)
-  if (e.target.value === 'cycling') {
-    inputCadence.parentNode.classList.add('form__row--hidden')
-    inputElevation.parentNode.classList.remove('form__row--hidden')
-  } else if (e.target.value === 'running') {
-    inputCadence.parentNode.classList.remove('form__row--hidden')
-    inputElevation.parentNode.classList.add('form__row--hidden')
-  }
+  inputCadence.closest('.form__row').classList.toggle('form__row--hidden')
+  inputElevation.closest('.form__row').classList.toggle('form__row--hidden')
 })
