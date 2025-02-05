@@ -88,6 +88,15 @@ a:visited {
   font-size: 1.7rem;
   font-weight: 600;
   grid-column: 1 / -1;
+
+  display: flex;
+}
+
+.workout__title .btn {
+  padding-inline: 10px;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
 }
 
 .workout__details {
