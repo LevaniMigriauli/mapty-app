@@ -180,6 +180,10 @@ a:visited {
   display: none;
 }
 
+.form-edit {
+  margin-bottom: 2px;
+}
+
 .copyright {
   margin-top: auto;
   font-size: 1.3rem;
