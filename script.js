@@ -102,144 +102,7 @@ class App {
     inputType.addEventListener('change', this._toggleElevationField)
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this))
     // Edit added workout
-    containerWorkouts.addEventListener('click', function (e) {
-
-      if (!e.target.classList.contains('btn__edit')) return
-      const work = e.target.closest('.workout')
-      const workoutId = work.dataset.id
-      const workoutEl = this.#workouts.find(work => work.id === workoutId)
-      const indexOfWorkout = this.#workouts.indexOf(workoutEl)
-      const workoutType = workoutEl.type
-      //   need edit logic here
-      // prevent adding multiple forms
-      const hasEditForm = work.previousElementSibling.classList.contains('form-edit')
-      if (hasEditForm) return;
-      const formId = workoutId + indexOfWorkout
-
-      let html = `
-        <span>Edit  </span><span> workout </span>
-        <div class="form__row">
-          <label class="form__label">Type</label>
-          <select class="form__input form__input--type" value="${workoutEl.type}">
-            <option value="running">Running</option>
-            <option value="cycling">Cycling</option>
-          </select>
-        </div>
-        <div class="form__row">
-          <label class="form__label">Distance</label>
-          <input class="form__input form__input--distance" placeholder="km" Value='${workoutEl.distance}'/>
-        </div>
-        <div class="form__row">
-          <label class="form__label">Duration</label>
-          <input
-              class="form__input form__input--duration"
-              placeholder="min"
-              Value="${workoutEl.duration}"
-          />
-        </div>
-        <button class="form__btn">OK</button>
-     `
-
-      if (workoutType === 'running') {
-        html += `
-      <div class="form__row">
-        <label class="form__label">Cadence</label>
-        <input
-            class="form__input form__input--cadence"
-            placeholder="step/min"
-            Value="${workoutEl.cadence}"
-        />
-      </div>
-        `
-      }
-
-      if (workoutType === 'cycling') {
-        html += `
-      <div class="form__row">
-        <label class="form__label">Elev Gain</label>
-        <input
-            class="form__input form__input--elevation"
-            placeholder="meters"
-            Value="${workoutEl.elevationGain}"
-        />
-      </div>
-        `
-      }
-
-      work.insertAdjacentHTML('beforebegin', `<form class="form form-edit" data-edit-for="${workoutId}" id="${formId}">${html}</form>`)
-
-      containerWorkouts.addEventListener('submit', function (e) {
-        e.preventDefault()
-        console.log(e.target)
-        if (e.target.classList.contains('form-edit') && e.target.id === formId) {
-          const formEditData = e.target.querySelectorAll('.form__row')
-
-          const updatedParams = {}
-
-          formEditData.forEach(el => {
-            const labelText = el.children[0].textContent
-            const inputValue = +el.children[1].value
-
-            if (labelText === 'Duration') {
-              updatedParams.duration = inputValue
-              return;
-            }
-            if (labelText === 'Distance') {
-              updatedParams.distance = inputValue
-              return;
-            }
-            if (workoutType === 'running') {
-              if (labelText === 'Cadence') {
-                updatedParams.cadence = inputValue
-                return;
-              }
-            }
-            if (workoutType === 'cycling') {
-              if (labelText === 'Elev Gain') {
-                updatedParams.elevationGain = inputValue
-                return;
-              }
-            }
-          })
-          this._editWorkoutData(workoutId, updatedParams)
-          containerWorkouts.removeChild(e.target)
-        }
-      }.bind(this))
-    }.bind(this))
-  }
-
-  _editWorkoutData(workoutId, params) {
-    let workoutInstance
-    // Refactorable using Object.assign
-    const currentWorkoutToEdit = this.#workouts.find(el => el.id === workoutId)
-    // Refactorable using for in loop
-    currentWorkoutToEdit.distance = params.distance
-    currentWorkoutToEdit.duration = params.duration
-    if (currentWorkoutToEdit instanceof Running) currentWorkoutToEdit.cadence = params.cadence
-    if (currentWorkoutToEdit instanceof Cycling) currentWorkoutToEdit.elevationGain = params.elevationGain
-
-    const currentWorkoutElementNode = containerWorkouts.querySelector(`.workout[data-id='${workoutId}']`)
-
-    const nodes = currentWorkoutElementNode.querySelectorAll('div .workout__value')
-
-    if (currentWorkoutToEdit instanceof Running) {
-      nodes.forEach((el, i) => {
-        if (i === 0) el.textContent = currentWorkoutToEdit.distance
-        if (i === 1) el.textContent = currentWorkoutToEdit.duration
-        if (i === 2) el.textContent = currentWorkoutToEdit.calcPace().toFixed(1)
-        if (i === 3) el.textContent = currentWorkoutToEdit.cadence
-      })
-      return
-    }
-    if (currentWorkoutToEdit instanceof Cycling) {
-      nodes.forEach((el, i) => {
-        if (i === 0) el.textContent = currentWorkoutToEdit.distance
-        if (i === 1) el.textContent = currentWorkoutToEdit.duration
-        if (i === 2) el.textContent = currentWorkoutToEdit.calcSpeed().toFixed(1)
-        if (i === 3) el.textContent = currentWorkoutToEdit.elevationGain
-      })
-      return
-    }
+    containerWorkouts.addEventListener('click', this._editWorkout.bind(this))
   }
 
 
@@ -426,7 +289,7 @@ class App {
   }
 
   _setLocalStorage() {
-    localStorage.setItem('workouts', JSON.stringify(this.#workouts))
+    setTimeout(() => localStorage.setItem('workouts', JSON.stringify(this.#workouts)), 0)
   }
 
   _getLocalStorage() {
@@ -444,6 +307,145 @@ class App {
     })
 
     this.#workouts.forEach(work => this._renderWorkout(work))
+  }
+
+  _editWorkout(e) {
+    if (!e.target.classList.contains('btn__edit')) return
+    const work = e.target.closest('.workout')
+    const workoutId = work.dataset.id
+    const workoutEl = this.#workouts.find(work => work.id === workoutId)
+    const indexOfWorkout = this.#workouts.indexOf(workoutEl)
+    const workoutType = workoutEl.type
+    //   need edit logic here
+    // prevent adding multiple forms
+    const hasEditForm = work.previousElementSibling.classList.contains('form-edit')
+    if (hasEditForm) return;
+    const formId = workoutId + indexOfWorkout
+
+    let html = `
+        <span>Edit  </span><span> workout </span>
+        <div class="form__row">
+          <label class="form__label">Type</label>
+          <select class="form__input form__input--type" value="${workoutEl.type}">
+            <option value="running">Running</option>
+            <option value="cycling">Cycling</option>
+          </select>
+        </div>
+        <div class="form__row">
+          <label class="form__label">Distance</label>
+          <input class="form__input form__input--distance" placeholder="km" Value='${workoutEl.distance}'/>
+        </div>
+        <div class="form__row">
+          <label class="form__label">Duration</label>
+          <input
+              class="form__input form__input--duration"
+              placeholder="min"
+              Value="${workoutEl.duration}"
+          />
+        </div>
+        <button class="form__btn">OK</button>
+     `
+
+    if (workoutType === 'running') {
+      html += `
+      <div class="form__row">
+        <label class="form__label">Cadence</label>
+        <input
+            class="form__input form__input--cadence"
+            placeholder="step/min"
+            Value="${workoutEl.cadence}"
+        />
+      </div>
+        `
+    }
+
+    if (workoutType === 'cycling') {
+      html += `
+      <div class="form__row">
+        <label class="form__label">Elev Gain</label>
+        <input
+            class="form__input form__input--elevation"
+            placeholder="meters"
+            Value="${workoutEl.elevationGain}"
+        />
+      </div>
+        `
+    }
+
+    work.insertAdjacentHTML('beforebegin', `<form class="form form-edit" data-edit-for="${workoutId}" id="${formId}">${html}</form>`)
+
+    containerWorkouts.addEventListener('submit', function (e) {
+      e.preventDefault()
+      // console.log(e.target)
+      if (e.target.classList.contains('form-edit') && e.target.id === formId) {
+        const formEditData = e.target.querySelectorAll('.form__row')
+
+        const updatedParams = {}
+
+        formEditData.forEach(el => {
+          const labelText = el.children[0].textContent
+          const inputValue = +el.children[1].value
+
+          if (labelText === 'Duration') {
+            updatedParams.duration = inputValue
+            return;
+          }
+          if (labelText === 'Distance') {
+            updatedParams.distance = inputValue
+            return;
+          }
+          if (workoutType === 'running') {
+            if (labelText === 'Cadence') {
+              updatedParams.cadence = inputValue
+              return;
+            }
+          }
+          if (workoutType === 'cycling') {
+            if (labelText === 'Elev Gain') {
+              updatedParams.elevationGain = inputValue
+              return;
+            }
+          }
+        })
+        this._editWorkoutProps(workoutId, updatedParams)
+        e.target.remove()
+      }
+    }.bind(this))
+  }
+
+  _editWorkoutProps(workoutId, params) {
+    let workoutInstance
+    // Refactorable using Object.assign
+    const currentWorkoutToEdit = this.#workouts.find(el => el.id === workoutId)
+    // Refactorable using for in loop
+    currentWorkoutToEdit.distance = params.distance
+    currentWorkoutToEdit.duration = params.duration
+    if (currentWorkoutToEdit instanceof Running) currentWorkoutToEdit.cadence = params.cadence
+    if (currentWorkoutToEdit instanceof Cycling) currentWorkoutToEdit.elevationGain = params.elevationGain
+
+    const currentWorkoutElementNode = containerWorkouts.querySelector(`.workout[data-id='${workoutId}']`)
+
+    const nodes = currentWorkoutElementNode.querySelectorAll('div .workout__value')
+
+    this._setLocalStorage()
+    if (currentWorkoutToEdit instanceof Running) {
+      nodes.forEach((el, i) => {
+        if (i === 0) el.textContent = currentWorkoutToEdit.distance
+        if (i === 1) el.textContent = currentWorkoutToEdit.duration
+        if (i === 2) el.textContent = currentWorkoutToEdit.calcPace().toFixed(1)
+        if (i === 3) el.textContent = currentWorkoutToEdit.cadence
+      })
+      return
+    }
+    if (currentWorkoutToEdit instanceof Cycling) {
+      nodes.forEach((el, i) => {
+        if (i === 0) el.textContent = currentWorkoutToEdit.distance
+        if (i === 1) el.textContent = currentWorkoutToEdit.duration
+        if (i === 2) el.textContent = currentWorkoutToEdit.calcSpeed().toFixed(1)
+        if (i === 3) el.textContent = currentWorkoutToEdit.elevationGain
+      })
+      return
+    }
   }
 
   reset() {
